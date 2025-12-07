@@ -1,0 +1,12 @@
+# remove everything
+docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+rm -fr zm
+
+# inspect
+docker logs -f Zoneminder
+
+# start
+docker compose pull
+# use -d for daemon mode
+docker compose up
+
