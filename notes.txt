@@ -3,7 +3,7 @@ docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
 rm -fr zm
 
 # inspect
-docker logs -f Zoneminder
+docker logs -f zoneminder
 
 # start
 docker compose pull
