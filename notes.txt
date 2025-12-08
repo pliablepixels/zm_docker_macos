@@ -9,4 +9,6 @@ docker logs -f zoneminder
 docker compose pull
 # use -d for daemon mode
 docker compose up
+# to stop 
+docker compose down
 
