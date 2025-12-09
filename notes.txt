@@ -1,3 +1,10 @@
+# new functionality to add to ES docker 
+docker exec -it zoneminder apt-get update
+docker exec -it zoneminder apt-get install libcrypt-openssl-rsa-perl
+# incorporate any changes to docker-compose
+docker-compose up -d --force-recreate zoneminder
+
+
 # remove everything
 docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
 rm -fr zm
@@ -11,4 +18,5 @@ docker compose pull
 docker compose up
 # to stop 
 docker compose down
-
+# to restart
+docker-compose restart zoneminder

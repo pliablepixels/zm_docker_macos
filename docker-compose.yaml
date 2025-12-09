@@ -32,6 +32,8 @@ services:
       - ./zm/data:/data
       - ./zm/config:/config
       - ./zm/log:/log
+      # Mount local zmeventnotification code
+      - ./zmeventnotification.pl:/usr/bin/zmeventnotification.pl
       - type: tmpfs
         target: /dev/shm
         tmpfs:

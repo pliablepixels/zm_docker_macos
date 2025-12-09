@@ -27,6 +27,7 @@ Temporary Items
 
 # Docker
 *.log
+service-account.json
 
 # IDE
 .idea/
