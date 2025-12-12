@@ -37,6 +37,9 @@
 use strict;
 use warnings;
 use bytes;
+
+print "ES: SCRIPT STARTED\n";
+
 use POSIX ':sys_wait_h';
 use Time::HiRes qw/gettimeofday/;
 use Time::Seconds;
@@ -48,6 +51,8 @@ use ZoneMinder;
 use POSIX;
 use DBI;
 use version;
+
+$| = 1;
 
 $ENV{PATH} = '/bin:/usr/bin';
 $ENV{SHELL} = '/bin/sh' if exists $ENV{SHELL};
@@ -1419,7 +1424,7 @@ sub checkNewEvents() {
 
         # First we need to close any other open events for this monitor
         foreach my $ev ( keys %{ $active_events{$mid} } ) {
-          next if $ev == 'last_event_processed';
+          next if $ev eq 'last_event_processed';
           if (!$active_events{$mid}->{$ev}->{End}) {
             printDebug(
               "Closing unclosed event:$ev of Monitor:$mid as we are in a new event",
@@ -2440,7 +2445,7 @@ sub checkConnection {
   my $escontrol_conn =
     scalar
     grep {
-      ($_->{state} == VALID_CONNECTION) and defined($_->{category}) and ($_->{category} == 'escontrol')
+      ($_->{state} == VALID_CONNECTION) and defined($_->{category}) and ($_->{category} eq 'escontrol')
     } @active_connections;
 
   printDebug(

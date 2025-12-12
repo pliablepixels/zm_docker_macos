@@ -33,7 +33,11 @@ services:
       - ./zm/config:/config
       - ./zm/log:/log
       # Mount local zmeventnotification code
-      - ./zmeventnotification.pl:/usr/bin/zmeventnotification.pl
+      - ./overrides/zmeventnotification.pl:/usr/bin/zmeventnotification.pl
+      # Mount fixed run script
+      - ./overrides/zmeventnotification_run:/etc/services.d/zmeventnotification/run
+      # Mount logs config
+      - ./overrides/03-logs.conf:/config/conf.d/03-logs.conf
       - type: tmpfs
         target: /dev/shm
         tmpfs:
