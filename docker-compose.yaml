@@ -32,12 +32,17 @@ services:
       - ./zm/data:/data
       - ./zm/config:/config
       - ./zm/log:/log
+      # Mount overrides directory (read-only)
+      - ./overrides:/overrides:ro
       # Mount local zmeventnotification code
       - ./overrides/zmeventnotification.pl:/usr/bin/zmeventnotification.pl
       # Mount fixed run script
       - ./overrides/zmeventnotification_run:/etc/services.d/zmeventnotification/run
       # Mount logs config
       - ./overrides/03-logs.conf:/config/conf.d/03-logs.conf
+      # Mount init scripts
+      - ./overrides/90-copy-secrets.sh:/etc/cont-init.d/90-copy-secrets.sh
+      - ./overrides/95-install-fcm-deps.sh:/etc/cont-init.d/95-install-fcm-deps.sh
       - type: tmpfs
         target: /dev/shm
         tmpfs:
