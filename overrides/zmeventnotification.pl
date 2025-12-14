@@ -802,6 +802,8 @@ Android FCM push priority............. ${\(value_or_undefined($fcm_android_prior
 Android FCM push ttl.................. ${\(value_or_undefined($fcm_android_ttl))}
 Log FCM message ID.................... ${\(value_or_undefined($fcm_log_message_id))}
 Log RAW FCM Messages.................. ${\(yes_or_no($fcm_log_raw_message))}
+FCM Service Account File.............. ${\(value_or_undefined($fcm_service_account_file))}
+FCM Mode.............................. ${\($fcm_service_account_file ? "DIRECT (via Service Account)" : "PROXY")}
 FCM V1 URL............................ ${\(value_or_undefined($fcm_v1_url))}
 FCM V1 Key............................ ${\(default_or_custom($fcm_v1_key, DEFAULT_FCM_V1_KEY))}
 
@@ -1824,22 +1826,50 @@ sub sendOverFCMV1 {
   my $obj        = shift;
   my $event_type = shift;
   my $resCode    = shift;
-  my $key        = $fcm_v1_key;
-  my $uri        = $fcm_v1_url;
+  my $key;
+  my $uri;
+
+  # TWO MODES - mutually exclusive:
+  # Mode A: Direct FCM via service account (when fcm_service_account_file is set)
+  # Mode B: Shared proxy via fcm_v1_key (default for old zmNinja project)
 
   if ($fcm_service_account_file) {
+      # MODE A: Direct FCM push using service account
+      printDebug("fcmv1: Using direct FCM with service account file: $fcm_service_account_file", 2);
+
       my $access_token = get_google_access_token($fcm_service_account_file);
-      if ($access_token) {
-          $key = "Bearer $access_token";
-           local $/;
-           if (open( my $fh, '<', $fcm_service_account_file )) {
-              my $json_text = <$fh>;
-              close($fh);
-              my $data = decode_json($json_text);
-              my $project_id = $data->{project_id};
-              $uri = "https://fcm.googleapis.com/v1/projects/$project_id/messages:send";
-           }
+      if (!$access_token) {
+          printError("fcmv1: Failed to get access token from service account file. Push notification aborted.");
+          return;
       }
+
+      $key = "Bearer $access_token";
+
+      local $/;
+      my $fh;
+      if (!open( $fh, '<', $fcm_service_account_file )) {
+          printError("fcmv1: Cannot open service account file $fcm_service_account_file: $!. Push notification aborted.");
+          return;
+      }
+      my $json_text = <$fh>;
+      close($fh);
+
+      my $data = decode_json($json_text);
+      my $project_id = $data->{project_id};
+      if (!$project_id) {
+          printError("fcmv1: No project_id found in service account file. Push notification aborted.");
+          return;
+      }
+
+      $uri = "https://fcm.googleapis.com/v1/projects/$project_id/messages:send";
+      printDebug("fcmv1: Using direct FCM URL: $uri", 2);
+
+  } else {
+      # MODE B: Shared proxy for zoneminder-ninja project
+      printDebug("fcmv1: Using shared proxy mode (zmNinja)", 2);
+      $key = $fcm_v1_key;
+      $uri = $fcm_v1_url;
+      printDebug("fcmv1: Using proxy URL: $uri", 2);
   }
 
   my $mid   = $alarm->{MonitorId};
@@ -1922,63 +1952,125 @@ sub sendOverFCMV1 {
 
 # https://firebase.google.com/docs/reference/admin/python/firebase_admin.messaging
 
-  my $message_v2 = {
-    token => $obj->{token},
-    title => $title,
-    body  => $body,
-    sound => 'default',
-    badge => int($badge),
-    log_message_id => $fcm_log_message_id,
-    data  => {
-      mid                     => $mid,
-      eid                     => $eid,
-      notification_foreground => 'true'
-      }
-  };
+  my $message_v2;
 
-  if ($obj->{platform} eq 'android') {
-    $message_v2->{android} = {
-      icon     => 'ic_stat_notification',
-      priority => $fcm_android_priority
-    };
-    $message_v2->{android}->{ttl} = $fcm_android_ttl if defined($fcm_android_ttl);
-    $message_v2->{android}->{tag} = 'zmninjapush' if $replace_push_messages;
-    if (defined ($obj->{appversion}) && ($obj->{appversion} ne 'unknown')) {
-      printDebug('setting channel to zmninja', 2);
-      $message_v2->{android}->{channel} = 'zmninja';
-    } else {
-      printDebug('legacy client, NOT setting channel to zmninja', 2);
-    }
-  } elsif ($obj->{platform} eq 'ios') {
-    $message_v2->{ios} = {
-      thread_id=>'zmninja_alarm',
-      #aps_alert_custom_data=>{
-      #
-      #},
-      #aps_custom_data=>{
-      #
-      #},
-      headers => {
-        'apns-priority' => '10' ,
-        'apns-push-type'=>'alert',
-        #'apns-expiration'=>'0'
+  if ($fcm_service_account_file) {
+      # Direct Google FCM v1 API format
+      # https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages
+      printDebug("fcmv1: Building Google FCM v1 API format", 2);
+
+      $message_v2 = {
+        message => {
+          token => $obj->{token},
+          notification => {
+            title => $title,
+            body  => $body
+          },
+          data => {
+            mid => "$mid",
+            eid => "$eid",
+            notification_foreground => 'true'
+          }
         }
       };
-      $message_v2->{ios}->{headers}->{'apns-collapse-id'} = 'zmninjapush' if ($replace_push_messages);
+
+      # Add image if available
+      if ( $picture_url && $include_picture ) {
+        $message_v2->{message}->{notification}->{image} = $pic;
+      }
+
+      # Platform-specific configuration
+      if ($obj->{platform} eq 'android') {
+        $message_v2->{message}->{android} = {
+          priority => $fcm_android_priority,
+          notification => {
+            icon => 'ic_stat_notification',
+            sound => 'default'
+          }
+        };
+        $message_v2->{message}->{android}->{ttl} = $fcm_android_ttl . 's' if defined($fcm_android_ttl);
+        $message_v2->{message}->{android}->{notification}->{tag} = 'zmninjapush' if $replace_push_messages;
+        if (defined ($obj->{appversion}) && ($obj->{appversion} ne 'unknown')) {
+          printDebug('fcmv1: setting android channel to zmninja', 2);
+          $message_v2->{message}->{android}->{notification}->{channel_id} = 'zmninja';
+        } else {
+          printDebug('fcmv1: legacy android client, NOT setting channel', 2);
+        }
+      } elsif ($obj->{platform} eq 'ios') {
+        $message_v2->{message}->{apns} = {
+          payload => {
+            aps => {
+              alert => {
+                title => $title,
+                body => $body
+              },
+              badge => int($badge),
+              sound => 'default',
+              'thread-id' => 'zmninja_alarm'
+            }
+          },
+          headers => {
+            'apns-priority' => '10',
+            'apns-push-type' => 'alert'
+          }
+        };
+        $message_v2->{message}->{apns}->{headers}->{'apns-collapse-id'} = 'zmninjapush' if $replace_push_messages;
+      } else {
+        printDebug('fcmv1: Unknown platform '.$obj->{platform}, 2);
+      }
+
   } else {
-    printDebug('Unknown platform '.$obj->{platform}, 2);
-  }
+      # Proxy format (zoneminder-ninja cloud function)
+      printDebug("fcmv1: Building proxy format for proxy cloud function", 2);
 
-  if ($fcm_log_raw_message) {
-    $message_v2->{log_raw_message} = 'yes';
-    printDebug("The server cloud function at $uri will log your full message. Please ONLY USE THIS FOR DEBUGGING with me author and turn off later", 2);
-  }
+      $message_v2 = {
+        token => $obj->{token},
+        title => $title,
+        body  => $body,
+        sound => 'default',
+        badge => int($badge),
+        log_message_id => $fcm_log_message_id,
+        data  => {
+          mid                     => $mid,
+          eid                     => $eid,
+          notification_foreground => 'true'
+        }
+      };
 
-  if ( $picture_url && $include_picture ) {
-    # $ios_message->{mutable_content} = \1;
-    #$ios_message->{content_available} = \1;
-    #$message_v2->{image_url_jpg} = $pic;
-    $message_v2->{image_url} = $pic;
+      if ($obj->{platform} eq 'android') {
+        $message_v2->{android} = {
+          icon     => 'ic_stat_notification',
+          priority => $fcm_android_priority
+        };
+        $message_v2->{android}->{ttl} = $fcm_android_ttl if defined($fcm_android_ttl);
+        $message_v2->{android}->{tag} = 'zmninjapush' if $replace_push_messages;
+        if (defined ($obj->{appversion}) && ($obj->{appversion} ne 'unknown')) {
+          printDebug('setting channel to zmninja', 2);
+          $message_v2->{android}->{channel} = 'zmninja';
+        } else {
+          printDebug('legacy client, NOT setting channel to zmninja', 2);
+        }
+      } elsif ($obj->{platform} eq 'ios') {
+        $message_v2->{ios} = {
+          thread_id=>'zmninja_alarm',
+          headers => {
+            'apns-priority' => '10' ,
+            'apns-push-type'=>'alert',
+          }
+        };
+        $message_v2->{ios}->{headers}->{'apns-collapse-id'} = 'zmninjapush' if ($replace_push_messages);
+      } else {
+        printDebug('Unknown platform '.$obj->{platform}, 2);
+      }
+
+      if ($fcm_log_raw_message) {
+        $message_v2->{log_raw_message} = 'yes';
+        printDebug("The server cloud function at $uri will log your full message. Please ONLY USE THIS FOR DEBUGGING with me author and turn off later", 2);
+      }
+
+      if ( $picture_url && $include_picture ) {
+        $message_v2->{image_url} = $pic;
+      }
   }
   my $json = encode_json($message_v2);
   my $djson = $json;
