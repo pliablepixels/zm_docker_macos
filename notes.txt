@@ -1,10 +1,12 @@
- incorporate any changes to docker-compose
-docker-compose up -d --force-recreate zoneminder
-
 # start
 docker compose pull
 # use -d for daemon mode
+docker compose up -d
 docker compose up
+
+#incorporate any changes to docker-compose
+docker-compose up -d --force-recreate zoneminder
+
 
 # to stop 
 docker compose down

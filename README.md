@@ -21,3 +21,20 @@ This is a fork of the eventserver-base docker container. See below for changes. 
     - The other files fix bugs in the container (ES logs were not visible, secrets fix as described above)
 
 Also see [notes](notes.txt)
+
+
+#### Configuring push notification support 
+
+1. Generate a Firebase service account key:
+   - Go to Firebase Console > Project Settings > Service Accounts (Make sure its the same project you used for the mobile app)
+   - Click **Generate new private key**
+   - Save the JSON file to `zm/config`
+
+2. Configure `zm/config/zmeventnotification.ini` 
+   ```ini
+   fcm_service_account_file = /config/<your service account>.json
+   ```
+What this does is instruct zmES to directly use FCM push without needing an intermediary
+
+3. Restart the event notification server
+
