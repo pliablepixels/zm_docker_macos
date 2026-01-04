@@ -21,3 +21,5 @@ docker logs -f zoneminder
 docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
 rm -fr zm
 
+# ssh
+docker exec -it zoneminder /bin/bash
