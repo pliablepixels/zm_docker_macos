@@ -39,3 +39,6 @@ service-account.json
 # Temporary files
 *.tmp
 *.bak
+
+# Cloned repos (generated at container startup)
+pp/

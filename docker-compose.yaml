@@ -43,6 +43,8 @@ services:
       # Mount init scripts
       - ./overrides/90-copy-secrets.sh:/etc/cont-init.d/90-copy-secrets.sh
       - ./overrides/95-install-fcm-deps.sh:/etc/cont-init.d/95-install-fcm-deps.sh
+      - ./overrides/96-install-python-deps.sh:/etc/cont-init.d/96-install-python-deps.sh
+      - ./pp:/pp
       - type: tmpfs
         target: /dev/shm
         tmpfs:
