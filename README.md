@@ -22,8 +22,29 @@ This is a fork of the eventserver-base docker container. See below for changes. 
 
 Also see [notes](notes.txt)
 
+## SSL / HTTPS
 
-#### Configuring push notification support 
+ZoneMinder is configured with a self-signed certificate. HTTP (port 80) automatically redirects to HTTPS (port 443).
+
+- Certificates are at `zm/config/ssl/cert.cer` and `zm/config/ssl/key.pem`
+- The cert is issued for `IP:192.168.50.11`, `DNS:localhost`, and `IP:127.0.0.1`
+- To trust it in your browser, import `zm_selfsigned.crt` (copy of the cert in the project root)
+
+## Event Servers
+
+Two event servers run simultaneously:
+
+| | New ES | Old ES (legacy) |
+|---|---|---|
+| **Port** | 9000 | 9001 |
+| **Source** | [pliablepixels/zmeventnotification](https://github.com/pliablepixels/zmeventnotification) (in `/pp`) | [ZoneMinder/zmeventnotification](https://github.com/ZoneMinder/zmeventnotification) |
+| **Config format** | YAML (`zm/config/zmeventnotification.yml`) | INI (`overrides/zmeventnotification_old.ini`) |
+| **SSL** | yes | yes |
+| **WebSocket URL** | `wss://192.168.50.11:9000` | `wss://192.168.50.11:9001` |
+
+Both use the same self-signed SSL certs. The old ES is mounted from `overrides/zmeventnotification.pl` and runs as a separate s6 service (`zmeventnotification-old`).
+
+#### Configuring push notification support
 
 1. Generate a Firebase service account key:
    - Go to Firebase Console > Project Settings > Service Accounts (Make sure its the same project you used for the mobile app)

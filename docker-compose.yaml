@@ -26,6 +26,7 @@ services:
       - 80:80
       - 443:443
       - 9000:9000
+      - 9001:9001
     networks:
       - zoneminder
     volumes:
@@ -34,10 +35,11 @@ services:
       - ./zm/log:/log
       # Mount overrides directory (read-only)
       - ./overrides:/overrides:ro
-      # Mount local zmeventnotification code
-      - ./overrides/zmeventnotification.pl:/usr/bin/zmeventnotification.pl
-      # Mount fixed run script
+      # Mount new ES run script (port 9000, from /pp)
       - ./overrides/zmeventnotification_run:/etc/services.d/zmeventnotification/run
+      # Mount old/legacy ES (port 9001, from ZoneMinder/zmeventnotification)
+      - ./overrides/zmeventnotification.pl:/usr/bin/zmeventnotification_old.pl
+      - ./overrides/zmeventnotification_old_run:/etc/services.d/zmeventnotification-old/run
       # Mount logs config
       - ./overrides/03-logs.conf:/config/conf.d/03-logs.conf
       # Mount init scripts

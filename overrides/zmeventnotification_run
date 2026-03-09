@@ -1,11 +1,11 @@
 #!/command/with-contenv bash
 . "/usr/local/bin/logger"
 # ==============================================================================
-# ZM Event Notification Server
-# Runs ES in foreground
+# ZM Event Notification Server (NEW - from /pp)
+# Runs ES in foreground on port 9000
 # ==============================================================================
 
-ES_FLAGS="--config /config/zmeventnotification.ini"
+ES_FLAGS="--config /config/zmeventnotification.yml"
 
 if [ "${ES_DEBUG_ENABLED}" -eq 1 ]; then
   echo "Enabling ES Debug!" | info
@@ -15,7 +15,9 @@ fi
 echo "Waiting for ZoneMinder to start" | info
 s6-svwait -U /run/service/zoneminder
 
-echo "Starting Event Server..." | info
+echo "Starting Event Server (new, port 9000)..." | info
+# Symlink modules so FindBin can locate them from /pp/zmeventnotification
+ln -sfn /pp/zmeventnotification/ZmEventNotification /usr/bin/ZmEventNotification
 # fdmove -c 1 3 \
-  /usr/bin/zmeventnotification.pl \
+  /pp/zmeventnotification/zmeventnotification.pl \
     ${ES_FLAGS}

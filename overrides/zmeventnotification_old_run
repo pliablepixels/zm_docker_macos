@@ -1,0 +1,21 @@
+#!/command/with-contenv bash
+. "/usr/local/bin/logger"
+# ==============================================================================
+# ZM Event Notification Server (OLD/LEGACY - from ZoneMinder/zmeventnotification)
+# Runs ES in foreground on port 9001
+# ==============================================================================
+
+ES_FLAGS="--config /overrides/zmeventnotification_old.ini"
+
+if [ "${ES_DEBUG_ENABLED}" -eq 1 ]; then
+  echo "Enabling Legacy ES Debug!" | info
+  ES_FLAGS="${ES_FLAGS} --debug"
+fi
+
+echo "Waiting for ZoneMinder to start" | info
+s6-svwait -U /run/service/zoneminder
+
+echo "Starting Legacy Event Server (old, port 9001)..." | info
+# fdmove -c 1 3 \
+  /usr/bin/zmeventnotification_old.pl \
+    ${ES_FLAGS}
