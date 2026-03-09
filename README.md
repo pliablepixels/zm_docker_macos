@@ -27,8 +27,10 @@ Also see [notes](notes.txt)
 ZoneMinder is configured with a self-signed certificate. HTTP (port 80) automatically redirects to HTTPS (port 443).
 
 - Certificates are at `zm/config/ssl/cert.cer` and `zm/config/ssl/key.pem`
-- The cert is issued for `IP:192.168.50.11`, `DNS:localhost`, and `IP:127.0.0.1`
-- To trust it in your browser, import `zm_selfsigned.crt` (copy of the cert in the project root)
+- The cert is auto-generated on startup using `ZM_SSL_IP` from `.env` — set this to the IP you access ZoneMinder from (your host/LAN IP)
+- If `ZM_SSL_IP` is not set, it falls back to the container's internal IP (which won't match from a browser)
+- The cert only regenerates if the IP changes
+- To trust it in your browser, copy `zm/config/ssl/cert.cer` and import it
 
 ## Event Servers
 

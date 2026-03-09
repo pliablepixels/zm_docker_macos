@@ -43,6 +43,7 @@ services:
       # Mount logs config
       - ./overrides/03-logs.conf:/config/conf.d/03-logs.conf
       # Mount init scripts
+      - ./overrides/48-generate-ssl-cert.sh:/etc/cont-init.d/48-generate-ssl-cert.sh
       - ./overrides/49-nginx-override.sh:/etc/cont-init.d/49-nginx-override.sh
       - ./overrides/90-copy-secrets.sh:/etc/cont-init.d/90-copy-secrets.sh
       - ./overrides/95-install-fcm-deps.sh:/etc/cont-init.d/95-install-fcm-deps.sh
