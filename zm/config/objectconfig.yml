@@ -1,0 +1,233 @@
+# Configuration file for object detection
+#
+# NOTE: ALL parameters here can be overridden on a per monitor basis.
+# Just add them under the correct monitors -> <id> section.
+#
+# The ml_sequence and stream_sequence structures define the detection
+# pipeline. All values are specified directly — no indirection needed.
+#
+# Path substitution: ${base_data_path} is replaced with the value from
+# general.base_data_path wherever it appears.
+
+general:
+  version: "2.0"
+
+  # Limit concurrent detection processes per processor type.
+  cpu_max_processes: 3
+  tpu_max_processes: 1
+  gpu_max_processes: 1
+
+  # Seconds to wait for processor lock before erroring out.
+  cpu_max_lock_wait: 100
+  tpu_max_lock_wait: 100
+  gpu_max_lock_wait: 100
+
+  # Override pyzm settings (e.g. database host, debug level).
+  # If ZM uses a UNIX socket (ZM_DB_HOST=localhost:/var/run/mysqld/mysqld.sock),
+  # set dbhost: "localhost:3306" here.
+  pyzm_overrides:
+    log_level_debug: 5
+    conf_path: /config
+    log_level_file: 5
+    log_debug: 1
+    logpath: /log
+    log_level_db: -5
+
+  # Secrets file for credential tokens (!TOKEN_NAME syntax)
+  secrets: /config/secrets.yml
+
+  # ZoneMinder connectivity
+  portal: "!ZM_PORTAL"
+  user: "!ZM_USER"
+  password: "!ZM_PASSWORD"
+  api_portal: "!ZM_API_PORTAL"
+  allow_self_signed: "yes"
+  #basic_user: user
+  #basic_password: password
+
+  # Base path for model files and data
+  base_data_path: /var/lib/zmeventnotification
+
+  # Deduplicate static objects across detections
+  match_past_detections: "no"
+  past_det_max_diff_area: "5%"
+
+  # Maximum bounding box size to accept (px or %)
+  max_detection_size: "90%"
+
+  # Image output settings
+  delete_after_analyze: "yes"
+  write_debug_image: "no"
+  write_image_to_zm: "yes"
+  show_percent: "yes"
+
+  # Polygon overlay settings
+  poly_color: "(255,255,255)"
+  poly_thickness: 2
+
+  # ZoneMinder zone import
+  #import_zm_zones: "yes"
+  only_triggered_zm_zones: "no"
+
+
+# Push notification animations
+animation:
+  create_animation: "no"
+  animation_types: "mp4,gif"
+  animation_width: 640
+  animation_retry_sleep: 15
+  animation_max_tries: 4
+  fast_gif: "no"
+
+
+# Remote ML gateway (https://github.com/pliablepixels/mlapi)
+remote:
+  #ml_gateway: "http://192.168.1.183:5000/api/v1"
+  #ml_fallback_local: "yes"
+  ml_user: "!ML_USER"
+  ml_password: "!ML_PASSWORD"
+  ml_timeout: 5
+
+
+ml:
+  disable_locks: "no"
+
+  # Frame selection strategy
+  stream_sequence:
+    frame_strategy: most_models
+    frame_set: "snapshot,alarm"
+    contig_frames_before_error: 5
+    max_attempts: 3
+    sleep_between_attempts: 4
+    resize: 800
+
+  # ML detection pipeline — all values inline, no {{}} indirection
+  ml_sequence:
+    general:
+      model_sequence: "object,face,alpr"
+      disable_locks: "no"
+      match_past_detections: "no"
+      past_det_max_diff_area: "5%"
+      car_past_det_max_diff_area: "10%"
+      #ignore_past_detection_labels: ['dog', 'cat']
+      aliases:
+        - ['car', 'bus', 'truck', 'boat']
+        - ['broccoli', 'pottedplant']
+
+    object:
+      general:
+        pattern: "(person|car|motorbike|bus|truck|boat)"
+        same_model_sequence_strategy: first
+      sequence:
+        - name: TPU MobileDet
+          enabled: "no"
+          object_weights: "${base_data_path}/models/coral_edgetpu/ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
+          object_labels: "${base_data_path}/models/coral_edgetpu/coco_indexed.names"
+          object_min_confidence: 0.6
+          object_framework: coral_edgetpu
+          tpu_max_processes: 1
+          tpu_max_lock_wait: 100
+          max_detection_size: "90%"
+
+        - name: YOLOv4 GPU/CPU
+          enabled: "no"
+          object_config: "${base_data_path}/models/yolov4/yolov4.cfg"
+          object_weights: "${base_data_path}/models/yolov4/yolov4.weights"
+          object_labels: "${base_data_path}/models/yolov4/coco.names"
+          object_min_confidence: 0.3
+          object_framework: opencv
+          object_processor: gpu
+          gpu_max_processes: 1
+          gpu_max_lock_wait: 100
+          cpu_max_processes: 3
+          cpu_max_lock_wait: 100
+          max_detection_size: "90%"
+
+        - name: YOLOv26n ONNX GPU/CPU
+          enabled: "yes"
+          object_weights: "${base_data_path}/models/ultralytics/yolo26n.onnx"
+          object_min_confidence: 0.3
+          object_framework: opencv
+          object_processor: gpu
+          gpu_max_processes: 1
+          gpu_max_lock_wait: 100
+          cpu_max_processes: 3
+          cpu_max_lock_wait: 100
+          max_detection_size: "90%"
+
+    face:
+      general:
+        pattern: ".*"
+        #pre_existing_labels: ['person']
+        same_model_sequence_strategy: union
+      sequence:
+        - name: TPU face detection
+          enabled: "no"
+          face_detection_framework: tpu
+          face_weights: "${base_data_path}/models/coral_edgetpu/ssd_mobilenet_v2_face_quant_postprocess_edgetpu.tflite"
+          face_min_confidence: 0.3
+
+        - name: DLIB face recognition
+          enabled: "no"
+          #pre_existing_labels: ['face']
+          save_unknown_faces: "yes"
+          save_unknown_faces_leeway_pixels: 100
+          face_detection_framework: dlib
+          known_images_path: "${base_data_path}/known_faces"
+          unknown_images_path: "${base_data_path}/unknown_faces"
+          face_model: cnn
+          face_train_model: cnn
+          face_recog_dist_threshold: 0.6
+          face_num_jitters: 1
+          face_upsample_times: 1
+          gpu_max_processes: 1
+          gpu_max_lock_wait: 100
+          cpu_max_processes: 3
+          cpu_max_lock_wait: 100
+          max_size: 800
+
+    alpr:
+      general:
+        same_model_sequence_strategy: first
+        pre_existing_labels: ['car', 'motorbike', 'bus', 'truck', 'boat']
+        pattern: ".*"
+      sequence:
+        - name: Platerecognizer cloud
+          enabled: "yes"
+          alpr_api_type: cloud
+          alpr_service: plate_recognizer
+          alpr_key: "!PLATEREC_ALPR_KEY"
+          platerec_stats: "yes"
+          platerec_min_dscore: 0.1
+          platerec_min_score: 0.2
+          max_size: 1600
+          #platerec_payload:
+          #  regions: ['us']
+          #  camera_id: 12
+          #platerec_config:
+          #  region: strict
+          #  mode: fast
+
+
+# Monitor-specific overrides
+# Example for monitor ID 999:
+monitors:
+  999:
+    match_past_detections: "no"
+    wait: 5
+    resize: "no"
+
+    # Override ml_sequence for this monitor
+    ml_sequence:
+      general:
+        model_sequence: "object,alpr"
+      object:
+        general:
+          pattern: "(person)"
+
+    zones:
+      my_driveway:
+        coords: "306,356 1003,341 1074,683 154,715"
+        detection_pattern: "(person)"
+      some_other_area:
+        coords: "0,0 200,300 700,900"

@@ -1,5 +1,18 @@
-# ZoneMinder
-zm/
+# ZoneMinder runtime data (not config)
+zm/db/
+zm/data/
+zm/log/
+
+# ZoneMinder sensitive/runtime config
+zm/config/secrets.yml
+zm/config/secrets.ini
+zm/config/tokens.txt
+zm/config/ssl/
+zm/config/zm.conf
+zm/config/zmeventnotification.ini
+zm/config/zmeventnotification_old.ini
+zm/config/*.migrated
+zm/config/conf.d/
 
 # macOS
 .DS_Store
@@ -27,7 +40,7 @@ Temporary Items
 
 # Docker
 *.log
-service-account.json
+*service-account*.json
 
 # IDE
 .idea/
@@ -40,5 +53,6 @@ service-account.json
 *.tmp
 *.bak
 
-# Cloned repos (generated at container startup)
-pp/
+# Other cloned repos
+pp/pyzm/
+

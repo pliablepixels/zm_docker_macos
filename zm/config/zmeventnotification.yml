@@ -1,0 +1,61 @@
+general:
+  secrets: /config/secrets.yml
+  base_data_path: /var/lib/zmeventnotification
+  use_escontrol_interface: 'no'
+  escontrol_interface_file: /var/lib/zmeventnotification/misc/escontrol_interface.dat
+  escontrol_interface_password: '!ESCONTROL_INTERFACE_PASSWORD'
+  restart_interval: '0'
+network:
+  port: '9001'
+  address: 0.0.0.0
+auth:
+  enable: 'no'
+  timeout: '20'
+push:
+  use_api_push: 'no'
+  api_push_script: /var/lib/zmeventnotification/bin/pushapi_pushover.py
+fcm:
+  enable: 'yes'
+  use_fcmv1: 'yes'
+  replace_push_messages: 'no'
+  token_file: /config/tokens.txt
+  date_format: '%I:%M %p, %d-%b'
+  fcm_android_priority: high
+  fcm_log_raw_message: 'no'
+  fcm_v1_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJnZW5lcmF0b3IiOiJ6bW5nIiwiaWF0IjoxNzcyNTc5ODMyLCJjbGllbnQiOiJ6bW5nIn0.EVqWa1k_OeWlRk-IojL7rBwYKm_gLGobhoojhz-9fIg
+  fcm_v1_url: https://us-central1-zmng-b7af6.cloudfunctions.net/send_push
+mqtt:
+  enable: 'no'
+  server: 127.0.0.1
+  retain: 'no'
+ssl:
+  enable: 'yes'
+  cert: '!ES_CERT_FILE'
+  key: '!ES_KEY_FILE'
+customize:
+  console_logs: 'yes'
+  es_debug_level: '4'
+  event_check_interval: '5'
+  monitor_reload_interval: '300'
+  read_alarm_cause: 'yes'
+  tag_alarm_event_id: 'yes'
+  use_custom_notification_sound: 'no'
+  include_picture: 'yes'
+  send_event_start_notification: 'yes'
+  send_event_end_notification: 'yes'
+  picture_url: '!ZMES_PICTURE_URL'
+  picture_portal_username: '!ZM_USER'
+  picture_portal_password: '!ZM_PASSWORD'
+  use_hooks: 'no'
+hook:
+  max_parallel_hooks: '0'
+  event_start_hook: ${base_data_path}/bin/zm_event_start.sh
+  event_start_notify_on_hook_success: all
+  event_start_notify_on_hook_fail: none
+  event_end_notify_on_hook_success: fcm,web,api
+  event_end_notify_on_hook_fail: none
+  event_end_notify_if_start_success: 'yes'
+  use_hook_description: 'yes'
+  keep_frame_match_type: 'yes'
+  hook_pass_image_path: 'yes'
+  tag_detected_objects: 'no'
