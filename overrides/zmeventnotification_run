@@ -2,7 +2,7 @@
 . "/usr/local/bin/logger"
 # ==============================================================================
 # ZM Event Notification Server (NEW - from /pp)
-# Runs ES in foreground on port 9000
+# Runs ES in foreground on port 9001
 # ==============================================================================
 
 ES_FLAGS="--config /config/zmeventnotification.yml"
@@ -15,7 +15,7 @@ fi
 echo "Waiting for ZoneMinder to start" | info
 s6-svwait -U /run/service/zoneminder
 
-echo "Starting Event Server (new, port 9000)..." | info
+echo "Starting Event Server (new, port 9001)..." | info
 # Symlink modules so FindBin can locate them from /pp/zmeventnotification
 ln -sfn /pp/zmeventnotification/ZmEventNotification /usr/bin/ZmEventNotification
 # fdmove -c 1 3 \

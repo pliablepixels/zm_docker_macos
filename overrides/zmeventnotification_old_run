@@ -2,7 +2,7 @@
 . "/usr/local/bin/logger"
 # ==============================================================================
 # ZM Event Notification Server (OLD/LEGACY - from ZoneMinder/zmeventnotification)
-# Runs ES in foreground on port 9001
+# Runs ES in foreground on port 9000
 # ==============================================================================
 
 ES_FLAGS="--config /overrides/zmeventnotification_old.ini"
@@ -15,7 +15,7 @@ fi
 echo "Waiting for ZoneMinder to start" | info
 s6-svwait -U /run/service/zoneminder
 
-echo "Starting Legacy Event Server (old, port 9001)..." | info
+echo "Starting Legacy Event Server (old, port 9000)..." | info
 # fdmove -c 1 3 \
   /usr/bin/zmeventnotification_old.pl \
     ${ES_FLAGS}
