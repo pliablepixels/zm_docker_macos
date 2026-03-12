@@ -25,7 +25,7 @@ fi
 
 # Check if existing cert already matches the current IP
 if [ -f "$CERT_FILE" ]; then
-  EXISTING_IPS=$(openssl x509 -in "$CERT_FILE" -text -noout 2>/dev/null | grep -oP 'IP Address:\K[^,]+')
+  EXISTING_IPS=$(openssl x509 -in "$CERT_FILE" -text -noout 2>/dev/null | grep 'IP Address:' | sed 's/IP Address://g; s/DNS:[^,]*//g; s/,/ /g; s/^ *//')
   if echo "$EXISTING_IPS" | grep -qF "$CERT_IP"; then
     echo "SSL cert already matches IP $CERT_IP, skipping regeneration"
     exit 0
