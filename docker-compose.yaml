@@ -55,7 +55,9 @@ services:
           size: 1000000000
     env_file:
       - ./.env
-#    environment:
+    environment:
+      # Forwarded from the shell by ./up.sh so the cert is pinned to the host LAN IP.
+      - ZM_SSL_IP=${ZM_SSL_IP:-}
 #      - ZM_SERVER_HOST=zoneminder1
 
 
